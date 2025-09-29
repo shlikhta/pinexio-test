@@ -311,4 +311,10 @@ export const TocData: TocData = {
       href: '/docs/getting-started/quick-start#start-writing',
     },
   ],
+  'new-section/my-test-page': [
+    {
+        title: "New Section",
+        href: "/docs/my-test-page#new-section",
+    }
+]
 };
