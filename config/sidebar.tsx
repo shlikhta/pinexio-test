@@ -124,4 +124,14 @@ export const sidebarNav = [
     href: '/docs/search-bar',
     pages: [],
   },
+  {
+    title: 'New Section',
+    icon: <Component className="h-5 w-5" />, // Use any icon
+    pages: [
+      {
+        title: 'My Test Page',
+        href: '/docs/my-test-page',
+      },
+    ],
+  },
 ];
