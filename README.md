@@ -3,7 +3,7 @@
   <img src="./public/logos/pinedocs.png"  align="center" alt="fox logo" width="200px">
   <h1 align="center"> PINEXIO </h1>
   <p align="center">
-   Pinexio is a modern, customizable documentation template built for Next.js 15, Tailwind CSS 4, and MDX. It makes creating, managing, and presenting your project documentation effortless.
+   Pinexio is a modern, customizable documentation template built for Next.js 16, Tailwind CSS 4, and MDX. It makes creating, managing, and presenting your project documentation effortless.
   </p>
 </p>
 </a>
@@ -12,15 +12,15 @@
 
 - **Customizable UI** 🌈: Tailor the design to your needs with light/dark themes and minimal UI libraries.
 - **MDX Support** 📚: Write rich, interactive documentation with JSX components.
-- **Automatic Content Indexing** 🔍: Thanks to Contentlayer, MDX pages are automatically indexed and searchable.
+- **Automatic Content Indexing** 🔍: MDX pages in `/docs` are automatically indexed and searchable — no extra setup.
 - **Zero Setup Hassle** 🚀: Add an MDX file to `/docs`, and it’s instantly live.
 
 ## Key Technologies
 
-- **Next.js 15** for SEO-friendly, performant documentation.
+- **Next.js 16** for SEO-friendly, performant documentation.
 - **Tailwind CSS 4** for responsive design.
 - **MDX** to blend documentation with React components.
-- **Contentlayer** for seamless content management.
+- **next-mdx-remote** for seamless content management.
 
 ## Get Started
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { TocData } from 'config/toc';
 import { AlignLeft } from 'lucide-react';
@@ -15,7 +15,6 @@ interface TocProps {
 
 const Toc: React.FC<TocProps> = ({ doc }) => {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [currentPath, setCurrentPath] = useState('');
 
   useEffect(() => {
@@ -29,12 +28,15 @@ const Toc: React.FC<TocProps> = ({ doc }) => {
     return () => {
       window.removeEventListener('hashchange', updatePath);
     };
-  }, [pathname, searchParams]); // Reacts to URL changes
+  }, [pathname]); // Reacts to URL changes
 
   return (
     <aside className="fixed right-0 hidden xl:block w-64 p-6 top-16 border-l border-[var(--color-border)] h-[calc(100vh-4rem)] overflow-y-auto">
       <div className="top-0 pb-2">
-        <h2 className="flex flex-1 gap-2 item-center font-semibold text-[var(--color)]"><AlignLeft size={19} />On this page</h2>
+        <h2 className="flex flex-1 gap-2 item-center font-semibold text-[var(--color)]">
+          <AlignLeft size={19} />
+          On this page
+        </h2>
       </div>
       <nav className="mt-4">
         <ul className="space-y-3">
