@@ -1,3 +1,8 @@
+// Set DISABLE_INDEXING=true (e.g. on a staging/preview deployment) to hide
+// the whole site from search engines: adds a noindex meta tag and blocks
+// all crawlers via /robots.txt (see src/app/robots.ts).
+const isIndexingDisabled = process.env.DISABLE_INDEXING === 'true';
+
 export const meta = {
   metadataBase: new URL('https://pinexio.vercel.app'),
   title: 'Pinexio - Documentation template',
@@ -40,7 +45,7 @@ export const meta = {
   alternates: {
     canonical: 'https://pinexio.vercel.app', // Set the canonical URL
   },
-  robots: 'index, follow', // Allows search engines to index and follow links
+  robots: isIndexingDisabled ? 'noindex, nofollow' : 'index, follow',
   // Optional: Hreflang for multilingual content (if applicable)
   hreflang: {
     en: 'https://pinexio.vercel.app', // English version URL
