@@ -1,5 +1,5 @@
 'use client';
-import { Github } from 'lucide-react';
+// import { Github } from 'lucide-react';
 import { ModeToggle } from '@/components/mode-toggle';
 import Image from 'next/image';
 import { Button } from '@/components/button';
@@ -25,7 +25,7 @@ export default function Home() {
                 router.push('https://github.com/sanjayc208/pinexio')
               }
             >
-              <Github className="h-[1.2rem] w-[1.2rem] transition-all" />
+              {/*<Github className="h-[1.2rem] w-[1.2rem] transition-all" />*/}
             </Button>
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function Home() {
                 router.push('https://github.com/sanjayc208/pinexio')
               }
             >
-              <Github size={20} />
+              {/*<Github size={20} />*/}
               GitHub
             </Button>
           </motion.div>

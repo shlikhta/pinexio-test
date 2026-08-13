@@ -20,7 +20,7 @@ import {
   UserAvatar,
   NestedLink,
 } from '@/components/sidebar';
-import { Github } from 'lucide-react';
+// import { Github } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import Header from '@/components/header';
@@ -120,7 +120,7 @@ export default function DocsLayout({
                   router.push('https://github.com/sanjayc208/pinedocs')
                 }
               >
-                <Github className="h-[1.2rem] w-[1.2rem] transition-all" />
+                {/*<Github className="h-[1.2rem] w-[1.2rem] transition-all" />*/}
               </Button>
             </div>
           </Header>
