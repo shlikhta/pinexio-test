@@ -16,10 +16,15 @@ export interface DocMeta {
 
 const DOCS_DIR = path.join(process.cwd(), 'docs');
 
+// Skip the cache in dev so editing/adding an .mdx file shows up on refresh
+// without restarting the dev server. In production the module is loaded
+// once per build, so caching there is free.
+const isDev = process.env.NODE_ENV !== 'production';
+
 let cache: DocMeta[] | null = null;
 
 export function getAllDocs(): DocMeta[] {
-  if (cache) return cache;
+  if (cache && !isDev) return cache;
 
   const entries = fs.readdirSync(DOCS_DIR, {
     withFileTypes: true,
