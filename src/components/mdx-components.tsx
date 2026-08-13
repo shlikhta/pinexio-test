@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { useMDXComponent } from 'next-contentlayer2/hooks';
+import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import clsx from 'clsx';
 import SearchButton from '@/components/search-button';
 import Preview from '@/components/preview';
@@ -243,7 +243,6 @@ const components = {
     tabs: Record<string, { syntax: string; language: string }>;
   }) => {
     const isLightMode = 'dark';
-
     return (
       <CustomSyntaxHighlighter
         tabs={tabs}
@@ -307,18 +306,19 @@ const components = {
   DialogHeader,
 };
 
-interface Mdxchildren {
-  code: string;
+interface MdxProps {
+  source: MDXRemoteSerializeResult;
 }
 
-export function Mdx({ code }: Mdxchildren) {
-  const Component = useMDXComponent(code, {
-    style: 'default',
-  });
-
+export function Mdx({ source }: MdxProps) {
   return (
     <div className="mdx">
-      <Component components={components} />
+      <MDXRemote
+        {...source}
+        // Expose React to inline demo expressions in MDX (e.g. React.useState)
+        scope={{ ...source.scope, React }}
+        components={components}
+      />
     </div>
   );
 }

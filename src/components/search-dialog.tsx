@@ -7,11 +7,7 @@ import React, {
   useImperativeHandle,
   useEffect,
 } from 'react';
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-} from '@/components/dialog';
+import { Dialog, DialogTrigger, DialogContent } from '@/components/dialog';
 import { Input } from '@/components/input';
 import SearchButton from '@/components/search-button';
 import { Text, Search } from 'lucide-react';
@@ -19,8 +15,8 @@ import Link from 'next/link';
 
 export interface DocType {
   title: string;
-  body: { raw?: string };
-  _raw: { flattenedPath: string };
+  slug: string;
+  raw: string;
 }
 
 export interface SearchDialogProps {
@@ -101,22 +97,19 @@ const SearchDialog = forwardRef<SearchDialogHandle, SearchDialogProps>(
       const q = query.toLowerCase();
       return searchData.filter((doc) => {
         const title = doc.title.toLowerCase();
-        const description = (doc.body.raw || '').toLowerCase();
+        const description = (doc.raw || '').toLowerCase();
         return title.includes(q) || description.includes(q);
       });
     }, [query, searchData]);
 
     return (
       <Dialog open={open} setOpen={setOpen}>
-        <DialogTrigger className='hidden sm:block'>
-          <SearchButton
-            size="sm"
-            placeholder="Search documentation.."
-          />
+        <DialogTrigger className="hidden sm:block">
+          <SearchButton size="sm" placeholder="Search documentation.." />
         </DialogTrigger>
         <DialogContent className="fixed h-auto sm:max-w-xl bg-muted p-2 top-40">
-        {/* Close Button */}
-        {/* <DialogCloseTrigger asChild>
+          {/* Close Button */}
+          {/* <DialogCloseTrigger asChild>
           <button
             className="cursor-pointer border border-border text-lg absolute -top-2 -right-2 bg-muted text-black dark:text-white rounded-full w-5 h-5 flex items-center justify-center shadow"
             aria-label="Close"
@@ -145,11 +138,11 @@ const SearchDialog = forwardRef<SearchDialogHandle, SearchDialogProps>(
               <ul className="list-none p-0">
                 {filteredDocs.map((doc) => (
                   <li
-                    key={doc._raw.flattenedPath}
+                    key={doc.slug}
                     className="gap-2 py-2 border-b border-border"
                   >
                     <Link
-                      href={`/docs/${doc._raw.flattenedPath}`}
+                      href={`/docs/${doc.slug}`}
                       onClick={() => setOpen(false)}
                     >
                       <div className="flex flex-col gap-3">
@@ -157,7 +150,7 @@ const SearchDialog = forwardRef<SearchDialogHandle, SearchDialogProps>(
                           <Text /> <div>{highlightText(doc.title, query)}</div>
                         </div>
                         <div className="text-sm">
-                          {getSnippet(doc.body.raw || 'No description', query)}
+                          {getSnippet(doc.raw || 'No description', query)}
                         </div>
                       </div>
                     </Link>
