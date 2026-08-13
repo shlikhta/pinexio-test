@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { SITE_URL } from './sitemap';
 
 // Mirrors the DISABLE_INDEXING flag in config/meta.tsx — when set, block
 // crawlers at the /robots.txt level too, not just via the meta tag.
@@ -19,5 +20,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
