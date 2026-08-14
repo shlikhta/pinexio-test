@@ -7,11 +7,6 @@ const eslintConfig = [
   },
   ...coreWebVitals,
   ...typescript,
-  {
-    rules: {
-      'react/no-unescaped-entities': 'off',
-    },
-  },
 ];
 
 export default eslintConfig;
