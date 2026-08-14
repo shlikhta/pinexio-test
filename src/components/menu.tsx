@@ -82,18 +82,6 @@ export const Menu: React.FC<MenuProps> = ({
     setIsOpen(!isOpen);
   };
 
-  // Initial measurement of popup when it first opens
-  useEffect(() => {
-    if (isOpen && popupRef.current) {
-      // Initial positioning with a slight delay to ensure the DOM is ready
-      setIsPositioning(true);
-      positioningTimerRef.current = window.setTimeout(() => {
-        calculatePosition();
-        setIsPositioning(false);
-      }, 10);
-    }
-  }, [isOpen]);
-
   // Determine the best position for the menu based on available space
   const calculatePosition = () => {
     if (!menuRef.current || !popupRef.current || !isOpen) return;
@@ -153,6 +141,18 @@ export const Menu: React.FC<MenuProps> = ({
       setPosition(newPosition);
     }
   };
+
+  // Initial measurement of popup when it first opens
+  useEffect(() => {
+    if (isOpen && popupRef.current) {
+      // Initial positioning with a slight delay to ensure the DOM is ready
+      setIsPositioning(true);
+      positioningTimerRef.current = window.setTimeout(() => {
+        calculatePosition();
+        setIsPositioning(false);
+      }, 10);
+    }
+  }, [isOpen]);
 
   // Handle resize and scroll events
   useEffect(() => {
