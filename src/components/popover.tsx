@@ -5,9 +5,8 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
+  useCallback,
+  ReactNode,
 } from 'react';
 
 export type Position = {
@@ -58,8 +57,17 @@ export const Popover = ({
   closeOnEsc = true,
   position = 'bottom',
 }: PopoverProps) => {
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
-  const [isPositioned, setIsPositioned] = useState(false);
+  const [isOpen, setIsOpen] = useState(open);
+  // Re-sync isOpen when the `open` prop itself changes, without an effect
+  // (react.dev: "Adjusting state when a prop changes"). isOpen still
+  // diverges from `open` in between via close()/PopoverTrigger clicks.
+  const [prevOpenProp, setPrevOpenProp] = useState(open);
+  if (open !== prevOpenProp) {
+    setPrevOpenProp(open);
+    setIsOpen(open);
+  }
+
+  const [isPositioned, setIsPositioned] = useState(false); // local state to track if the popover has been positioned
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const [actualPlacement, setActualPlacement] = useState<Position>({
@@ -67,28 +75,12 @@ export const Popover = ({
     yAlign: position === 'top' ? 'top' : 'bottom',
   });
 
-  // If `open` transmitted from the outside — component controlled, and source
-  // truth is prop, not internal state. There is no duplication, so there is
-  // sync useEffect is no longer required.
-  const isControlled = controlledOpen !== undefined;
-  const isOpen = isControlled ? controlledOpen : uncontrolledOpen;
-
-  const setIsOpen = useCallback(
-    (next: boolean | ((prev: boolean) => boolean)) => {
-      const value = typeof next === 'function' ? next(isOpen) : next;
-      if (!isControlled) {
-        setUncontrolledOpen(value);
-      }
-      onOpenChange?.(value);
-    },
-    [isControlled, isOpen, onOpenChange]
-  );
-
+  // Handle external close function
   const close = useCallback(() => {
     setIsOpen(false);
     setIsPositioned(false);
     onClose?.();
-  }, [setIsOpen, onClose]);
+  }, [onClose]);
 
   // Click outside the butt
   useEffect(() => {
@@ -107,7 +99,7 @@ export const Popover = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, closeOnOutsideClick, close]);
+  }, [closeOnOutsideClick, close]);
 
   // Handle ESC key
   useEffect(() => {
@@ -224,7 +216,7 @@ export const PopoverContent = ({
   const [dynamicStyles, setDynamicStyles] = useState({
     transform: 'translate(0px, 0px)',
   });
-  const [arrowStyles, setArrowStyles] = useState<any>({});
+  const [arrowStyles, setArrowStyles] = useState<React.CSSProperties>({});
 
   const getInitialPlacement = (pos: PopoverPosition): Position => {
     switch (pos) {
@@ -241,53 +233,51 @@ export const PopoverContent = ({
     }
   };
 
-  // Announced and memorialized TO updatePosition, because closing updatePosition
-  // calls this function and requires a stable link for dependencies.
-  const getArrowPosition = useCallback(
-    (xAlign: string, yAlign: string, size: number) => {
-      const arrowOffset = size / 2;
-      const pos: any = {};
+  const getArrowPosition = (
+    xAlign: string,
+    yAlign: string,
+    arrowSize: number
+  ): React.CSSProperties => {
+    const arrowOffset = arrowSize / 2;
+    const position: React.CSSProperties = {};
 
-      if (yAlign === 'top') {
-        pos.bottom = `-${arrowOffset}px`;
-        setArrowDefaultClassName(`border-r border-b border-border`);
-      } else if (yAlign === 'bottom') {
-        pos.top = `-${arrowOffset}px`;
-        setArrowDefaultClassName(`border-t border-l border-border`);
-      }
+    // Based on popover placement, determine arrow position and border styles
+    if (yAlign === 'top') {
+      position.bottom = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-r border-b border-border`);
+    } else if (yAlign === 'bottom') {
+      position.top = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-t border-l border-border`);
+    }
 
-      if ((yAlign === 'top' || yAlign === 'bottom') && xAlign === 'center') {
-        pos.left = '50%';
-        pos.marginLeft = `-${arrowOffset}px`;
-      } else if (
-        (yAlign === 'top' || yAlign === 'bottom') &&
-        xAlign === 'left'
-      ) {
-        pos.left = '20px';
-      } else if (
-        (yAlign === 'top' || yAlign === 'bottom') &&
-        xAlign === 'right'
-      ) {
-        pos.right = '20px';
-      }
+    if ((yAlign === 'top' || yAlign === 'bottom') && xAlign === 'center') {
+      position.left = '50%';
+      position.marginLeft = `-${arrowOffset}px`;
+    } else if ((yAlign === 'top' || yAlign === 'bottom') && xAlign === 'left') {
+      position.left = '20px';
+    } else if (
+      (yAlign === 'top' || yAlign === 'bottom') &&
+      xAlign === 'right'
+    ) {
+      position.right = '20px';
+    }
 
-      if (xAlign === 'left' && yAlign === 'center') {
-        pos.right = `-${arrowOffset}px`;
-        setArrowDefaultClassName(`border-r border-b border-border`);
-        pos.top = '50%';
-        pos.marginTop = `-${arrowOffset}px`;
-      } else if (xAlign === 'right' && yAlign === 'center') {
-        pos.left = `-${arrowOffset}px`;
-        setArrowDefaultClassName(`border-l border-b border-border`);
-        pos.top = '50%';
-        pos.marginTop = `-${arrowOffset}px`;
-      }
+    if (xAlign === 'left' && yAlign === 'center') {
+      position.right = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-r border-b border-border`);
+      position.top = '50%';
+      position.marginTop = `-${arrowOffset}px`;
+    } else if (xAlign === 'right' && yAlign === 'center') {
+      position.left = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-l border-b border-border`);
+      position.top = '50%';
+      position.marginTop = `-${arrowOffset}px`;
+    }
 
-      return pos;
-    },
-    [] // setArrowDefaultClassName is stable (it's setState), so there are no dependencies
-  );
+    return position;
+  };
 
+  // This function handles positioning the content relative to the trigger
   const updatePosition = useCallback(() => {
     if (!isOpen || !contentRef.current || !triggerRef.current) return;
 
@@ -383,17 +373,15 @@ export const PopoverContent = ({
 
     setArrowStyles(arrowPosition);
     setIsPositioned(true);
-  }, [isOpen, position, sideOffset, arrowSize, triggerRef, setIsPositioned]);
+  }, [isOpen, triggerRef, position, sideOffset, arrowSize, setIsPositioned]);
 
-  // DOM measurement and positioning — is synchronization with external
-  // the system (browser layout), so useLayoutEffect is appropriate here
-  // in `setIsPositioned` it is not an antipater.
-  useLayoutEffect(() => {
+  // Initialize position calculation in a layout effect to prevent flicker
+  useEffect(() => {
     if (isOpen && contentRef.current && triggerRef.current) {
       updatePosition();
     }
     return undefined;
-  }, [isOpen, updatePosition]);
+  }, [isOpen, triggerRef, updatePosition]);
 
   useEffect(() => {
     if (!isPositioned) return;
@@ -409,7 +397,7 @@ export const PopoverContent = ({
       window.removeEventListener('resize', handlePositionChange);
       window.removeEventListener('scroll', handlePositionChange, true);
     };
-  }, [isOpen, sideOffset, position, isPositioned, updatePosition]);
+  }, [isPositioned, updatePosition]);
 
   useEffect(() => {
     if (!isPositioned) return;
@@ -419,7 +407,7 @@ export const PopoverContent = ({
       observer.observe(contentRef.current, { childList: true, subtree: true });
     }
     return () => observer.disconnect();
-  }, [isOpen, isPositioned, updatePosition]);
+  }, [isPositioned, updatePosition]);
 
   if (!isOpen) {
     return null;

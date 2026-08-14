@@ -187,11 +187,11 @@ const components = {
     const match = className?.match(/language-(\w+)/);
     const language = match ? match[1] : 'plaintext';
 
-    const extractText = (children: React.ReactNode): string => {
-      if (typeof children === 'string') return children;
-      if (Array.isArray(children)) return children.map(extractText).join('');
-      if (React.isValidElement(children))
-        return extractText((children.props as any)?.children || '');
+    const extractText = (node: React.ReactNode): string => {
+      if (typeof node === 'string') return node;
+      if (Array.isArray(node)) return node.map(extractText).join('');
+      if (React.isValidElement<{ children?: React.ReactNode }>(node))
+        return extractText(node.props.children ?? '');
       return '';
     };
 

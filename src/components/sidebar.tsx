@@ -306,7 +306,9 @@ export function SidebarMenuItem({
   isCollapsable = false,
 }: SidebarMenuItemProps) {
   const { isOpen, isMobile, setIsOpen } = useSidebar();
-  const [isExpanded, setIsExpanded] = React.useState(defaultOpen);
+  const [manuallyExpanded, setManuallyExpanded] = React.useState(defaultOpen);
+  // alwaysOpen always wins, regardless of manual toggling — no effect needed.
+  const isExpanded = alwaysOpen || manuallyExpanded;
   const pathname = usePathname();
 
   // Effective state "expanded": if alwaysOpen — is always true,
@@ -323,7 +325,7 @@ export function SidebarMenuItem({
   const handleClick = (e: React.MouseEvent) => {
     if (children && !href && !alwaysOpen) {
       e.preventDefault();
-      setIsExpanded((prev) => !prev);
+      setManuallyExpanded((prev) => !prev);
     }
     if (isMobile && href) {
       setIsOpen(false);
@@ -393,7 +395,7 @@ export function SidebarMenuItem({
         </button>
       )}
 
-      {isOpen && expanded && children && (
+      {isOpen && isExpanded && children && (
         <div className="ml-6 mt-1 pl-3 border-l border-border space-y-1">
           {children}
         </div>

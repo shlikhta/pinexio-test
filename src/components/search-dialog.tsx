@@ -3,7 +3,6 @@
 import React, {
   useState,
   useMemo,
-  useRef,
   forwardRef,
   useImperativeHandle,
   useEffect,
@@ -57,7 +56,9 @@ const SearchDialog = forwardRef<SearchDialogHandle>((_props, ref) => {
   const [indexStatus, setIndexStatus] = useState<
     'idle' | 'loading' | 'ready' | 'error'
   >('idle');
-  const miniSearchRef = useRef<MiniSearch<SearchDoc> | null>(null);
+  const [miniSearch, setMiniSearch] = useState<MiniSearch<SearchDoc> | null>(
+    null
+  );
 
   useImperativeHandle(ref, () => ({
     close: () => setOpen(false),
@@ -78,7 +79,7 @@ const SearchDialog = forwardRef<SearchDialogHandle>((_props, ref) => {
   // Fetch + build the search index lazily on first open, so docs pages
   // don't ship the whole corpus on every load — only when search is used.
   useEffect(() => {
-    if (!open || miniSearchRef.current || indexStatus === 'loading') return;
+    if (!open || miniSearch || indexStatus === 'loading') return;
     setIndexStatus('loading');
     fetch('/api/search-index')
       .then((res) => {
@@ -87,14 +88,11 @@ const SearchDialog = forwardRef<SearchDialogHandle>((_props, ref) => {
         return res.text();
       })
       .then((json) => {
-        miniSearchRef.current = MiniSearch.loadJSON<SearchDoc>(
-          json,
-          searchIndexOptions
-        );
+        setMiniSearch(MiniSearch.loadJSON<SearchDoc>(json, searchIndexOptions));
         setIndexStatus('ready');
       })
       .catch(() => setIndexStatus('error'));
-  }, [open, indexStatus]);
+  }, [open, indexStatus, miniSearch]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), DEBOUNCE_MS);
@@ -102,11 +100,11 @@ const SearchDialog = forwardRef<SearchDialogHandle>((_props, ref) => {
   }, [query]);
 
   const filteredDocs = useMemo<SearchHit[]>(() => {
-    if (!debouncedQuery || !miniSearchRef.current) return [];
-    return miniSearchRef.current
+    if (!debouncedQuery || !miniSearch) return [];
+    return miniSearch
       .search(debouncedQuery, searchOptions)
       .slice(0, MAX_RESULTS) as SearchHit[];
-  }, [debouncedQuery, indexStatus]);
+  }, [debouncedQuery, miniSearch]);
 
   return (
     <Dialog open={open} setOpen={setOpen}>

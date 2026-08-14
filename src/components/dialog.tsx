@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
+import { useIsMounted } from '@/hooks/use-mounted';
 
 type DialogContextType = {
   open: boolean;
@@ -96,7 +97,13 @@ export function DialogContent({
     };
   }, [open, handleKeyDown]);
 
-  if (typeof window === 'undefined') return null;
+  // Portals need `document.body`, which doesn't exist during SSR. Rendering
+  // null based on `typeof window` diverges between the server render and
+  // the client's hydration render (both happen before this component has
+  // "mounted"), causing a hydration mismatch — useIsMounted keeps the
+  // hydration pass consistent, then swaps to the portal right after.
+  const mounted = useIsMounted();
+  if (!mounted) return null;
 
   return createPortal(
     <div
