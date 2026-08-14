@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
-import React from 'react';
-import {
+import React, {
   createContext,
+  ReactNode,
+  useCallback,
   useContext,
-  useState,
-  useRef,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 
@@ -25,8 +25,8 @@ type PopoverContextType = {
   position: PopoverPosition;
   actualPlacement: Position;
   setActualPlacement: React.Dispatch<React.SetStateAction<Position>>;
-  isPositioned: boolean; // Added isPositioned to the context
-  setIsPositioned: React.Dispatch<React.SetStateAction<boolean>>; // Added setIsPositioned to the context
+  isPositioned: boolean;
+  setIsPositioned: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const PopoverContext = createContext<PopoverContextType | null>(null);
@@ -34,7 +34,12 @@ const PopoverContext = createContext<PopoverContextType | null>(null);
 type PopoverProps = {
   children: ReactNode;
   className?: string;
+  /** Controlled state. If not passed —, the component controls itself. */
   open?: boolean;
+  /** Initial state for unmanaged mode. */
+  defaultOpen?: boolean;
+  /** Called whenever the opening state should change. */
+  onOpenChange?: (open: boolean) => void;
   onClose?: () => void;
   closeOnOutsideClick?: boolean;
   closeOnEsc?: boolean;
@@ -44,13 +49,24 @@ type PopoverProps = {
 export const Popover = ({
   children,
   className,
-  open = false,
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange,
   onClose,
   closeOnOutsideClick = true,
   closeOnEsc = true,
   position = 'bottom',
 }: PopoverProps) => {
   const [isOpen, setIsOpen] = useState(open);
+  // Re-sync isOpen when the `open` prop itself changes, without an effect
+  // (react.dev: "Adjusting state when a prop changes"). isOpen still
+  // diverges from `open` in between via close()/PopoverTrigger clicks.
+  const [prevOpenProp, setPrevOpenProp] = useState(open);
+  if (open !== prevOpenProp) {
+    setPrevOpenProp(open);
+    setIsOpen(open);
+  }
+
   const [isPositioned, setIsPositioned] = useState(false); // local state to track if the popover has been positioned
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -59,19 +75,14 @@ export const Popover = ({
     yAlign: position === 'top' ? 'top' : 'bottom',
   });
 
-  // Controlled vs uncontrolled handling
-  useEffect(() => {
-    setIsOpen(open);
-  }, [open]);
-
   // Handle external close function
-  const close = () => {
+  const close = useCallback(() => {
     setIsOpen(false);
-    setIsPositioned(false); // Reset positioning state when closing
+    setIsPositioned(false);
     onClose?.();
-  };
+  }, [onClose]);
 
-  // Handle outside clicks
+  // Click outside the butt
   useEffect(() => {
     if (!closeOnOutsideClick) return;
 
@@ -88,7 +99,7 @@ export const Popover = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, closeOnOutsideClick, onClose]);
+  }, [closeOnOutsideClick, close]);
 
   // Handle ESC key
   useEffect(() => {
@@ -104,7 +115,7 @@ export const Popover = ({
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [isOpen, closeOnEsc, onClose]);
+  }, [isOpen, closeOnEsc, close]);
 
   return (
     <PopoverContext.Provider
@@ -115,9 +126,9 @@ export const Popover = ({
         close,
         position,
         actualPlacement,
-        setActualPlacement: setActualPlacement,
-        isPositioned, // pass isPositioned to context
-        setIsPositioned, // pass setIsPositioned to context
+        setActualPlacement,
+        isPositioned,
+        setIsPositioned,
       }}
     >
       <div
@@ -145,7 +156,6 @@ export const PopoverTrigger = ({
   }
   const { setIsOpen, triggerRef } = context;
 
-  // If asChild is true, we clone the child element to add our props
   if (
     asChild &&
     React.isValidElement<React.HTMLAttributes<HTMLElement>>(children)
@@ -203,13 +213,11 @@ export const PopoverContent = ({
     xAlign: 'center',
     yAlign: position === 'top' ? 'top' : 'bottom',
   });
-  // const [isPositioned, setIsPositioned] = useState(false);
   const [dynamicStyles, setDynamicStyles] = useState({
     transform: 'translate(0px, 0px)',
   });
-  const [arrowStyles, setArrowStyles] = useState<any>({});
+  const [arrowStyles, setArrowStyles] = useState<React.CSSProperties>({});
 
-  // Convert the preferred position to initial placements
   const getInitialPlacement = (pos: PopoverPosition): Position => {
     switch (pos) {
       case 'top':
@@ -225,148 +233,13 @@ export const PopoverContent = ({
     }
   };
 
-  // This function handles positioning the content relative to the trigger
-  const updatePosition = () => {
-    if (!isOpen || !contentRef.current || !triggerRef.current) return;
-
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    const contentRect = contentRef.current.getBoundingClientRect();
-
-    // Viewport dimensions
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Calculate available spaces
-    const spaceAbove = triggerRect.top;
-    const spaceBelow = viewportHeight - triggerRect.bottom;
-    const spaceLeft = triggerRect.left;
-    const spaceRight = viewportWidth - triggerRect.right;
-
-    // Get preferred placements based on position prop
-    const preferredPlacement = getInitialPlacement(position);
-
-    // For vertical positioning (top or bottom)
-    let yAlign: Position['yAlign'] = preferredPlacement.yAlign;
-    let xAlign: Position['xAlign'] = preferredPlacement.xAlign;
-
-    // Handle horizontal positions (left/right)
-    if (position === 'left' || position === 'right') {
-      // For left position, check if there's enough space
-      if (position === 'left' && spaceLeft < contentRect.width) {
-        // Not enough space on left, try right
-        if (spaceRight >= contentRect.width) {
-          xAlign = 'right';
-        } else {
-          // Not enough space on either side, use the one with more space
-          xAlign = spaceLeft >= spaceRight ? 'left' : 'right';
-        }
-      }
-      // For right position, check if there's enough space
-      else if (position === 'right' && spaceRight < contentRect.width) {
-        // Not enough space on right, try left
-        if (spaceLeft >= contentRect.width) {
-          xAlign = 'left';
-        } else {
-          // Not enough space on either side, use the one with more space
-          xAlign = spaceRight >= spaceLeft ? 'right' : 'left';
-        }
-      }
-
-      // For horizontal positions, center vertically by default
-      yAlign = 'center';
-    }
-    // Handle vertical positions (top/bottom)
-    else {
-      // For bottom position, check if there's enough space
-      if (position === 'bottom' && spaceBelow < contentRect.height) {
-        // Not enough space below, try above
-        if (spaceAbove >= contentRect.height) {
-          yAlign = 'top';
-        } else {
-          // Not enough space on either side, use the one with more space
-          yAlign = spaceBelow >= spaceAbove ? 'bottom' : 'top';
-        }
-      }
-      // For top position, check if there's enough space
-      else if (position === 'top' && spaceAbove < contentRect.height) {
-        // Not enough space above, try below
-        if (spaceBelow >= contentRect.height) {
-          yAlign = 'bottom';
-        } else {
-          // Not enough space on either side, use the one with more space
-          yAlign = spaceAbove >= spaceBelow ? 'top' : 'bottom';
-        }
-      }
-
-      // Determine X alignment (left, center, right) for vertical positions
-      const contentWidth = contentRect.width;
-      const centerPos =
-        triggerRect.left + triggerRect.width / 2 - contentWidth / 2;
-
-      // Check if centered popover would go beyond screen edges
-      if (centerPos < 0) {
-        // Too far left, align with left side of trigger
-        xAlign = 'left';
-      } else if (centerPos + contentWidth > viewportWidth) {
-        // Too far right, align with right side of trigger
-        xAlign = 'right';
-      } else {
-        xAlign = 'center';
-      }
-    }
-
-    // Set the final placement
-    setPlacement({ xAlign, yAlign });
-
-    // Calculate translation values
-    let translateX = 0;
-    let translateY = 0;
-
-    // Calculate position based on placement
-    if (yAlign === 'top') {
-      translateY = -(contentRect.height + sideOffset);
-    } else if (yAlign === 'bottom') {
-      translateY = triggerRect.height + sideOffset;
-    } else if (yAlign === 'center') {
-      translateY = (triggerRect.height - contentRect.height) / 2;
-    }
-
-    if (xAlign === 'left') {
-      if (position === 'left') {
-        translateX = -(contentRect.width + sideOffset);
-      } else {
-        translateX = 0;
-      }
-    } else if (xAlign === 'right') {
-      if (position === 'right') {
-        translateX = triggerRect.width + sideOffset;
-      } else {
-        translateX = triggerRect.width - contentRect.width;
-      }
-    } else if (xAlign === 'center') {
-      translateX = (triggerRect.width - contentRect.width) / 2;
-    }
-
-    // Position the arrow
-    const arrowPosition = getArrowPosition(xAlign, yAlign, arrowSize);
-
-    // Apply positioning with transform
-    setDynamicStyles({
-      transform: `translate(${translateX}px, ${translateY}px)`,
-    });
-
-    setArrowStyles(arrowPosition);
-    // Now that we've calculated positions, make the popover visible
-    setIsPositioned(true);
-  };
-
   const getArrowPosition = (
     xAlign: string,
     yAlign: string,
     arrowSize: number
-  ) => {
+  ): React.CSSProperties => {
     const arrowOffset = arrowSize / 2;
-    const position: any = {};
+    const position: React.CSSProperties = {};
 
     // Based on popover placement, determine arrow position and border styles
     if (yAlign === 'top') {
@@ -404,17 +277,113 @@ export const PopoverContent = ({
     return position;
   };
 
+  // This function handles positioning the content relative to the trigger
+  const updatePosition = useCallback(() => {
+    if (!isOpen || !contentRef.current || !triggerRef.current) return;
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const contentRect = contentRef.current.getBoundingClientRect();
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const spaceAbove = triggerRect.top;
+    const spaceBelow = viewportHeight - triggerRect.bottom;
+    const spaceLeft = triggerRect.left;
+    const spaceRight = viewportWidth - triggerRect.right;
+
+    const preferredPlacement = getInitialPlacement(position);
+
+    let yAlign: Position['yAlign'] = preferredPlacement.yAlign;
+    let xAlign: Position['xAlign'] = preferredPlacement.xAlign;
+
+    if (position === 'left' || position === 'right') {
+      if (position === 'left' && spaceLeft < contentRect.width) {
+        if (spaceRight >= contentRect.width) {
+          xAlign = 'right';
+        } else {
+          xAlign = spaceLeft >= spaceRight ? 'left' : 'right';
+        }
+      } else if (position === 'right' && spaceRight < contentRect.width) {
+        if (spaceLeft >= contentRect.width) {
+          xAlign = 'left';
+        } else {
+          xAlign = spaceRight >= spaceLeft ? 'right' : 'left';
+        }
+      }
+
+      yAlign = 'center';
+    } else {
+      if (position === 'bottom' && spaceBelow < contentRect.height) {
+        if (spaceAbove >= contentRect.height) {
+          yAlign = 'top';
+        } else {
+          yAlign = spaceBelow >= spaceAbove ? 'bottom' : 'top';
+        }
+      } else if (position === 'top' && spaceAbove < contentRect.height) {
+        if (spaceBelow >= contentRect.height) {
+          yAlign = 'bottom';
+        } else {
+          yAlign = spaceAbove >= spaceBelow ? 'top' : 'bottom';
+        }
+      }
+
+      const contentWidth = contentRect.width;
+      const centerPos =
+        triggerRect.left + triggerRect.width / 2 - contentWidth / 2;
+
+      if (centerPos < 0) {
+        xAlign = 'left';
+      } else if (centerPos + contentWidth > viewportWidth) {
+        xAlign = 'right';
+      } else {
+        xAlign = 'center';
+      }
+    }
+
+    setPlacement({ xAlign, yAlign });
+
+    let translateX = 0;
+    let translateY = 0;
+
+    if (yAlign === 'top') {
+      translateY = -(contentRect.height + sideOffset);
+    } else if (yAlign === 'bottom') {
+      translateY = triggerRect.height + sideOffset;
+    } else if (yAlign === 'center') {
+      translateY = (triggerRect.height - contentRect.height) / 2;
+    }
+
+    if (xAlign === 'left') {
+      translateX = position === 'left' ? -(contentRect.width + sideOffset) : 0;
+    } else if (xAlign === 'right') {
+      translateX =
+        position === 'right'
+          ? triggerRect.width + sideOffset
+          : triggerRect.width - contentRect.width;
+    } else if (xAlign === 'center') {
+      translateX = (triggerRect.width - contentRect.width) / 2;
+    }
+
+    const arrowPosition = getArrowPosition(xAlign, yAlign, arrowSize);
+
+    setDynamicStyles({
+      transform: `translate(${translateX}px, ${translateY}px)`,
+    });
+
+    setArrowStyles(arrowPosition);
+    setIsPositioned(true);
+  }, [isOpen, triggerRef, position, sideOffset, arrowSize, setIsPositioned]);
+
   // Initialize position calculation in a layout effect to prevent flicker
   useEffect(() => {
     if (isOpen && contentRef.current && triggerRef.current) {
       updatePosition();
     }
     return undefined;
-  }, [isOpen]);
+  }, [isOpen, triggerRef, updatePosition]);
 
-  // Update position on scroll and resize
   useEffect(() => {
-    // Skip if not positioned yet
     if (!isPositioned) return;
 
     const handlePositionChange = () => {
@@ -422,15 +391,14 @@ export const PopoverContent = ({
     };
 
     window.addEventListener('resize', handlePositionChange);
-    window.addEventListener('scroll', handlePositionChange, true); // Capture phase to catch all scrolls
+    window.addEventListener('scroll', handlePositionChange, true);
 
     return () => {
       window.removeEventListener('resize', handlePositionChange);
       window.removeEventListener('scroll', handlePositionChange, true);
     };
-  }, [isOpen, sideOffset, position, isPositioned]);
+  }, [isPositioned, updatePosition]);
 
-  // Update position when content changes
   useEffect(() => {
     if (!isPositioned) return;
 
@@ -439,7 +407,7 @@ export const PopoverContent = ({
       observer.observe(contentRef.current, { childList: true, subtree: true });
     }
     return () => observer.disconnect();
-  }, [isOpen, isPositioned]);
+  }, [isPositioned, updatePosition]);
 
   if (!isOpen) {
     return null;
@@ -477,7 +445,6 @@ export const PopoverContent = ({
   );
 };
 
-// Additional components for convenience
 interface PopoverCloseProps extends React.HTMLAttributes<HTMLDivElement> {
   asChild?: boolean;
 }
@@ -494,7 +461,6 @@ export const PopoverClose = ({
   }
   const { close } = context;
 
-  // If asChild is true, we clone the child element to add our props
   if (
     asChild &&
     React.isValidElement<React.HTMLAttributes<HTMLElement>>(children)

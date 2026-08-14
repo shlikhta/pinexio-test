@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { useMDXComponent } from 'next-contentlayer2/hooks';
+import { MDXRemote, type MDXRemoteSerializeResult } from 'next-mdx-remote';
 import clsx from 'clsx';
 import SearchButton from '@/components/search-button';
 import Preview from '@/components/preview';
@@ -187,11 +187,11 @@ const components = {
     const match = className?.match(/language-(\w+)/);
     const language = match ? match[1] : 'plaintext';
 
-    const extractText = (children: React.ReactNode): string => {
-      if (typeof children === 'string') return children;
-      if (Array.isArray(children)) return children.map(extractText).join('');
-      if (React.isValidElement(children))
-        return extractText((children.props as any)?.children || '');
+    const extractText = (node: React.ReactNode): string => {
+      if (typeof node === 'string') return node;
+      if (Array.isArray(node)) return node.map(extractText).join('');
+      if (React.isValidElement<{ children?: React.ReactNode }>(node))
+        return extractText(node.props.children ?? '');
       return '';
     };
 
@@ -243,7 +243,6 @@ const components = {
     tabs: Record<string, { syntax: string; language: string }>;
   }) => {
     const isLightMode = 'dark';
-
     return (
       <CustomSyntaxHighlighter
         tabs={tabs}
@@ -307,18 +306,19 @@ const components = {
   DialogHeader,
 };
 
-interface Mdxchildren {
-  code: string;
+interface MdxProps {
+  source: MDXRemoteSerializeResult;
 }
 
-export function Mdx({ code }: Mdxchildren) {
-  const Component = useMDXComponent(code, {
-    style: 'default',
-  });
-
+export function Mdx({ source }: MdxProps) {
   return (
     <div className="mdx">
-      <Component components={components} />
+      <MDXRemote
+        {...source}
+        // Expose React to inline demo expressions in MDX (e.g. React.useState)
+        scope={{ ...source.scope, React }}
+        components={components}
+      />
     </div>
   );
 }

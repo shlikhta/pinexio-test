@@ -125,8 +125,9 @@ export const sidebarNav = [
     pages: [],
   },
   {
-    title: 'New Section',
+    title: 'Wiki Test',
     icon: <Component className="h-5 w-5" />, // Use any icon
+    defaultOpen: false,
     pages: [
       {
         title: 'My Test Page',

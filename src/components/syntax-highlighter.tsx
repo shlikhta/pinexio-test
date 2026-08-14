@@ -8,7 +8,7 @@ import {
   oneLight,
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Check, Copy } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, type PrismStyle } from '@/lib/utils';
 
 interface TabInfo {
   syntax: string;
@@ -21,8 +21,8 @@ interface CustomSyntaxHighlighterProps {
   // Choose theme mode (default: "dark")
   themeMode?: 'light' | 'dark';
   // Provide custom themes (optional)
-  lightTheme?: Record<string, any>;
-  darkTheme?: Record<string, any>;
+  lightTheme?: PrismStyle;
+  darkTheme?: PrismStyle;
   // Customize the animated indicator color
   indicatorColor?: string; // Accepts hex or Tailwind class
 }

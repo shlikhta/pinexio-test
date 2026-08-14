@@ -1,9 +1,7 @@
-// src/app/doc/layout.tsx
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
-import { allDocs } from 'contentlayer/generated';
 import SearchDialog from '@/components/search-dialog';
 import { sidebarNav } from 'config/sidebar';
 import Image from 'next/image';
@@ -22,7 +20,7 @@ import {
   UserAvatar,
   NestedLink,
 } from '@/components/sidebar';
-import { Github } from 'lucide-react';
+// import { Github } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import Header from '@/components/header';
@@ -35,7 +33,6 @@ export default function DocsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Destructure sidebarNav from configDocs
   const router = useRouter();
   const isMobile = useIsMobile();
   return (
@@ -116,48 +113,20 @@ export default function DocsLayout({
               <h1 className="text-xl font-bold">Documentation</h1>
             </div>
             <div className="flex gap-2 items-center pr-0 lg:pr-8">
-              <SearchDialog searchData={allDocs} />
+              <SearchDialog />
               <ModeToggle />
               <Button
                 onClick={() =>
                   router.push('https://github.com/sanjayc208/pinedocs')
                 }
               >
-                <Github className="h-[1.2rem] w-[1.2rem] transition-all" />
+                {/*<Github className="h-[1.2rem] w-[1.2rem] transition-all" />*/}
               </Button>
             </div>
           </Header>
-          {/* <div className={`grid xl:grid xl:grid-cols-[1fr_270px]`}> */}
           <main className="overflow-auto p-6">{children}</main>
         </MainContent>
       </SidebarProvider>
-
-      {/* Right Sidebar Provider */}
-      {/* <SidebarProvider defaultOpen={false} defaultSide="right" defaultMaxWidth={300} showIconsOnCollapse={true}>
-        <Sidebar>
-          <SidebarHeader>
-            <SidebarTrigger />
-            <Title>Documentation</Title>
-            <BookOpen className="h-5 w-5" />
-          </SidebarHeader>
-
-          <SidebarContent>
-            <SidebarMenu>
-              <SidebarMenuItem icon={<BookOpen className="h-5 w-5" />} label="Getting Started" href="/docs/getting-started" />
-              <SidebarMenuItem icon={<Settings className="h-5 w-5" />} label="Configuration" href="/docs/configuration" />
-              <SidebarMenuItem icon={<FileText className="h-5 w-5" />} label="API Reference" defaultOpen={true}>
-                <NestedLink href="/docs/api/overview">Overview</NestedLink>
-                <NestedLink href="/docs/api/endpoints">Endpoints</NestedLink>
-                <NestedLink href="/docs/api/authentication">Authentication</NestedLink>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-
-          <SidebarFooter>
-            <div className="text-sm text-gray-500">v1.0.0</div>
-          </SidebarFooter>
-        </Sidebar>
-      </SidebarProvider> */}
     </SidebarLayout>
   );
 }

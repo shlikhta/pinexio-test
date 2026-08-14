@@ -1,24 +1,16 @@
-// import createMDX from '@next/mdx';
-import { createContentlayerPlugin } from 'next-contentlayer2';
+import type { NextConfig } from 'next';
 
-const nextConfig = {
-  // pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
-  webpack: (config: { cache: boolean }) => {
-    config.cache = false;
-    return config;
-  },
+const nextConfig: NextConfig = {
+  // Bundle next-mdx-remote so its client runtime shares the app's React instance
+  transpilePackages: ['next-mdx-remote'],
   images: {
     remotePatterns: [
       {
-        protocol: 'https' as 'https',
+        protocol: 'https',
         hostname: 'avatars.githubusercontent.com',
       },
     ],
   },
 };
 
-const withContentlayer = createContentlayerPlugin({
-  // Additional Contentlayer config options
-});
-
-export default withContentlayer(nextConfig);
+export default nextConfig;

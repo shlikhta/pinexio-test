@@ -1,5 +1,5 @@
 'use client';
-import { Github } from 'lucide-react';
+// import { Github } from 'lucide-react';
 import { ModeToggle } from '@/components/mode-toggle';
 import Image from 'next/image';
 import { Button } from '@/components/button';
@@ -25,7 +25,7 @@ export default function Home() {
                 router.push('https://github.com/sanjayc208/pinexio')
               }
             >
-              <Github className="h-[1.2rem] w-[1.2rem] transition-all" />
+              {/*<Github className="h-[1.2rem] w-[1.2rem] transition-all" />*/}
             </Button>
           </div>
         </div>
@@ -65,8 +65,8 @@ export default function Home() {
               className="text-shadow-lg mt-6 text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
             >
               A customizable open-source documentation template built with
-              Next.js 15, Tailwind CSS 4, and Contentlayer for beautiful, fast,
-              and flexible documentation.
+              Next.js 16, Tailwind CSS 4, and MDX for beautiful, fast, and
+              flexible documentation.
             </motion.p>
           </div>
 
@@ -93,7 +93,7 @@ export default function Home() {
                 router.push('https://github.com/sanjayc208/pinexio')
               }
             >
-              <Github size={20} />
+              {/*<Github size={20} />*/}
               GitHub
             </Button>
           </motion.div>
@@ -102,7 +102,7 @@ export default function Home() {
           {[
             {
               src: '/logos/next15.png',
-              label: 'Next.js 15',
+              label: 'Next.js 16',
               className: 'dark:invert',
             },
             {
@@ -115,7 +115,6 @@ export default function Home() {
               label: 'Tailwind CSS 4',
               className: 'dark:invert',
             },
-            { src: '/logos/contentlayer.png', label: 'Contentlayer' },
             { src: '/logos/mdx.png', label: 'MDX' },
           ].map(({ src, label, className }) => (
             <motion.div

@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 // Type definitions
 interface MenuProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -82,20 +82,8 @@ export const Menu: React.FC<MenuProps> = ({
     setIsOpen(!isOpen);
   };
 
-  // Initial measurement of popup when it first opens
-  useEffect(() => {
-    if (isOpen && popupRef.current) {
-      // Initial positioning with a slight delay to ensure the DOM is ready
-      setIsPositioning(true);
-      positioningTimerRef.current = window.setTimeout(() => {
-        calculatePosition();
-        setIsPositioning(false);
-      }, 10);
-    }
-  }, [isOpen]);
-
   // Determine the best position for the menu based on available space
-  const calculatePosition = () => {
+  const calculatePosition = useCallback(() => {
     if (!menuRef.current || !popupRef.current || !isOpen) return;
 
     const triggerRect = menuRef.current.getBoundingClientRect();
@@ -152,7 +140,31 @@ export const Menu: React.FC<MenuProps> = ({
     if (newPosition !== position) {
       setPosition(newPosition);
     }
-  };
+  }, [isOpen, position]);
+
+  // Initial measurement of popup when it first opens
+  useEffect(() => {
+    if (isOpen && popupRef.current) {
+      // Initial positioning with a slight delay to ensure the DOM is ready
+      setIsPositioning(true);
+      positioningTimerRef.current = window.setTimeout(() => {
+        calculatePosition();
+        setIsPositioning(false);
+      }, 10);
+    }
+  }, [isOpen, calculatePosition]);
+
+  // Initial measurement of popup when it first opens
+  useEffect(() => {
+    if (isOpen && popupRef.current) {
+      // Initial positioning with a slight delay to ensure the DOM is ready
+      setIsPositioning(true);
+      positioningTimerRef.current = window.setTimeout(() => {
+        calculatePosition();
+        setIsPositioning(false);
+      }, 10);
+    }
+  }, [isOpen]);
 
   // Handle resize and scroll events
   useEffect(() => {
@@ -176,7 +188,7 @@ export const Menu: React.FC<MenuProps> = ({
       window.removeEventListener('resize', handleViewportChange);
       window.removeEventListener('scroll', handleViewportChange, true);
     };
-  }, [isOpen, position, isPositioning]);
+  }, [isOpen, isPositioning, calculatePosition]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -204,19 +216,27 @@ export const Menu: React.FC<MenuProps> = ({
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           if (child.type === MenuTrigger) {
-            return React.cloneElement(child as React.ReactElement<any>, {
-              onClick: handleToggle,
-              isOpen,
-            });
+            return React.cloneElement(
+              child as React.ReactElement<MenuTriggerProps>,
+              {
+                onClick: handleToggle,
+                isOpen,
+              }
+            );
           }
           if (child.type === PopMenu) {
             return isOpen
-              ? React.cloneElement(child as React.ReactElement<any>, {
-                  onClose: () => setIsOpen(false),
-                  position: position,
-                  isPositioning: isPositioning,
-                  ref: popupRef,
-                })
+              ? React.cloneElement(
+                  child as React.ReactElement<
+                    PopMenuProps & React.RefAttributes<HTMLDivElement>
+                  >,
+                  {
+                    onClose: () => setIsOpen(false),
+                    position: position,
+                    isPositioning: isPositioning,
+                    ref: popupRef,
+                  }
+                )
               : null;
           }
           return child;
@@ -227,8 +247,7 @@ export const Menu: React.FC<MenuProps> = ({
   );
 };
 
-interface MenuTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface MenuTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isOpen?: boolean;
 }
 export const MenuTrigger = React.forwardRef<
