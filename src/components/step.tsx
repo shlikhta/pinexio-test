@@ -20,7 +20,7 @@ export function Steps({
   return (
     <div className={cn('relative', className)} {...props}>
       {stepsArray.map((child, index) =>
-        React.cloneElement(child as React.ReactElement<any>, {
+        React.cloneElement(child as React.ReactElement<StepProps>, {
           stepNumber: index + 1,
           isLast: index === stepsArray.length - 1,
         })

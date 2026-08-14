@@ -13,7 +13,12 @@ const sizeClasses: Record<Size, string> = {
   xl: 'py-4 px-8 text-xl',
 };
 
-const typeClassName = {
+interface TabTypeClassName {
+  indicator: string;
+  button: string;
+}
+
+const typeClassName: Record<'box' | 'underline', TabTypeClassName> = {
   box: {
     indicator: 'h-full bg-muted border border-border rounded-lg', // Box-style indicator (full height, with a border)
     button: '', // Text color for active button
@@ -27,10 +32,13 @@ const typeClassName = {
 interface TabsContextType {
   value: string;
   onChange: (value: string) => void;
-  registerTab: (value: string, ref: React.RefObject<HTMLButtonElement>) => void;
+  registerTab: (
+    value: string,
+    ref: React.RefObject<HTMLButtonElement | null>
+  ) => void;
   size: Size;
   indicatorRef: React.RefObject<HTMLDivElement | null>;
-  typeClassName: any; // Type class name for the indicator
+  typeClassName: TabTypeClassName;
 }
 
 const TabsContext = React.createContext<TabsContextType>({
@@ -69,7 +77,7 @@ const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
       value || defaultValue || ''
     );
     const [tabRefs, setTabRefs] = React.useState<
-      Record<string, React.RefObject<HTMLButtonElement>>
+      Record<string, React.RefObject<HTMLButtonElement | null>>
     >({});
     const indicatorRef = React.useRef<HTMLDivElement>(null);
 
@@ -85,11 +93,10 @@ const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
 
       const updateIndicator = () => {
         const tabElement = selectedTabRef.current;
-        const tabElBounding = tabElement?.getBoundingClientRect();
-        if (indicatorRef.current) {
-          indicatorRef.current!.style.width = `${tabElBounding?.width}px`;
-          indicatorRef.current!.style.transform = `translateX(${tabElement.offsetLeft}px)`;
-        }
+        if (!tabElement || !indicatorRef.current) return;
+        const tabElBounding = tabElement.getBoundingClientRect();
+        indicatorRef.current.style.width = `${tabElBounding.width}px`;
+        indicatorRef.current.style.transform = `translateX(${tabElement.offsetLeft}px)`;
       };
 
       updateIndicator();
@@ -116,8 +123,8 @@ const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
     );
 
     const registerTab = React.useCallback(
-      (value: string, ref: React.RefObject<HTMLButtonElement>) => {
-        setTabRefs((prev) => ({ ...prev, [value]: ref as any }));
+      (value: string, ref: React.RefObject<HTMLButtonElement | null>) => {
+        setTabRefs((prev) => ({ ...prev, [value]: ref }));
       },
       []
     );
@@ -184,7 +191,7 @@ const Tab = React.forwardRef<HTMLButtonElement, TabProps>(
       typeClassName,
     } = React.useContext(TabsContext);
     const isSelected = selectedValue === value;
-    const tabRef = React.useRef<any>(null);
+    const tabRef = React.useRef<HTMLButtonElement | null>(null);
 
     // Register the tab (we ignore the return value from useEffect)
     React.useEffect(() => {

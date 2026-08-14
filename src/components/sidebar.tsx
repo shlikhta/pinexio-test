@@ -306,7 +306,9 @@ export function SidebarMenuItem({
   isCollapsable = false,
 }: SidebarMenuItemProps) {
   const { isOpen, isMobile, setIsOpen } = useSidebar();
-  const [isExpanded, setIsExpanded] = React.useState(defaultOpen || alwaysOpen);
+  const [manuallyExpanded, setManuallyExpanded] = React.useState(defaultOpen);
+  // alwaysOpen always wins, regardless of manual toggling — no effect needed.
+  const isExpanded = alwaysOpen || manuallyExpanded;
   const pathname = usePathname();
 
   // Determine if this item is active based on the current path
@@ -317,17 +319,10 @@ export function SidebarMenuItem({
         ? pathname === href || pathname.startsWith(href)
         : false;
 
-  React.useEffect(() => {
-    // If alwaysOpen is true, ensure the menu stays open
-    if (alwaysOpen) {
-      setIsExpanded(true);
-    }
-  }, [alwaysOpen]);
-
   const handleClick = (e: React.MouseEvent) => {
     if (children && !href && !alwaysOpen) {
       e.preventDefault();
-      setIsExpanded((prev) => !prev);
+      setManuallyExpanded((prev) => !prev);
     }
     // Close the sidebar if in mobile view when a link is clicked
     if (isMobile && href) {
@@ -397,7 +392,7 @@ export function SidebarMenuItem({
         </button>
       )}
 
-      {isOpen && (isExpanded || alwaysOpen) && children && (
+      {isOpen && isExpanded && children && (
         <div className="ml-6 mt-1 pl-3 border-l border-border space-y-1">
           {children}
         </div>

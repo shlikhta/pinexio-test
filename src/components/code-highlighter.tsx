@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/button';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
@@ -8,7 +8,7 @@ import {
   oneLight,
 } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Check, Copy } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, type PrismStyle } from '@/lib/utils';
 
 interface TabProps {
   name?: string;
@@ -33,8 +33,8 @@ interface CodeHighlighterProps {
   // Choose theme mode (default: "dark")
   themeMode?: 'light' | 'dark';
   // Provide custom themes (optional)
-  lightTheme?: Record<string, any>;
-  darkTheme?: Record<string, any>;
+  lightTheme?: PrismStyle;
+  darkTheme?: PrismStyle;
   // Customize the animated indicator color
   indicatorColor?: string; // Accepts hex or Tailwind class
 }
@@ -47,44 +47,46 @@ export const CodeHighlighter: React.FC<CodeHighlighterProps> = ({
   darkTheme = oneDark,
   indicatorColor,
 }) => {
-  // Filter out and validate Tab children
-  const tabElements = React.Children.toArray(children).filter(
-    (child) =>
-      React.isValidElement(child) &&
-      (child.type === CodeTab ||
-        (typeof child.type === 'function' && child.type.name === 'Tab'))
-  );
-
-  if (tabElements.length === 0) {
-    throw new Error(
-      'Error: You must provide at least one <Tab> child. Example:\n\n' +
-        `<CodeHighlighter themeMode="dark" indicatorColor="bg-blue-900">\n  <Tab name="jsx">{\`\\\`\\\`jsx\nconst a = 1\n\\\`\\\`\\\`\`}</Tab>\n</CodeHighlighter>`
-    );
-  }
-
   // Parse each Tab child for its code block content.
   // We assume a code block format:
   // \`\`\`<language>\n<code>\n\`\`\`
-  const tabs: Record<string, TabInfo> = {};
-  tabElements.forEach((child, index) => {
-    const { name, children: tabContent } = (
-      child as React.ReactElement<TabProps>
-    ).props;
-    const content = typeof tabContent === 'string' ? tabContent.trim() : '';
-    const codeRegex = /^```(\w+)\n([\s\S]+?)\n```$/;
-    const match = content.match(codeRegex);
-    let language = '';
-    let syntax = '';
-    if (match) {
-      language = match[1];
-      syntax = match[2];
-    } else {
-      syntax = content;
+  const tabs = useMemo(() => {
+    const tabElements = React.Children.toArray(children).filter(
+      (child) =>
+        React.isValidElement(child) &&
+        (child.type === CodeTab ||
+          (typeof child.type === 'function' && child.type.name === 'Tab'))
+    );
+
+    if (tabElements.length === 0) {
+      throw new Error(
+        'Error: You must provide at least one <Tab> child. Example:\n\n' +
+          `<CodeHighlighter themeMode="dark" indicatorColor="bg-blue-900">\n  <Tab name="jsx">{\`\\\`\\\`jsx\nconst a = 1\n\\\`\\\`\\\`\`}</Tab>\n</CodeHighlighter>`
+      );
     }
-    // Use provided name if exists; otherwise, fall back to language or default label.
-    const tabName = name ? name : language || `Tab ${index + 1}`;
-    tabs[tabName] = { syntax, language, name: tabName };
-  });
+
+    const result: Record<string, TabInfo> = {};
+    tabElements.forEach((child, index) => {
+      const { name, children: tabContent } = (
+        child as React.ReactElement<TabProps>
+      ).props;
+      const content = typeof tabContent === 'string' ? tabContent.trim() : '';
+      const codeRegex = /^```(\w+)\n([\s\S]+?)\n```$/;
+      const match = content.match(codeRegex);
+      let language = '';
+      let syntax = '';
+      if (match) {
+        language = match[1];
+        syntax = match[2];
+      } else {
+        syntax = content;
+      }
+      // Use provided name if exists; otherwise, fall back to language or default label.
+      const tabName = name ? name : language || `Tab ${index + 1}`;
+      result[tabName] = { syntax, language, name: tabName };
+    });
+    return result;
+  }, [children]);
 
   const tabKeys = Object.keys(tabs);
   const [activeTabKey, setActiveTabKey] = useState<string>(tabKeys[0]);

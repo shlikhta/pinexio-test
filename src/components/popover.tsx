@@ -6,6 +6,7 @@ import {
   useState,
   useRef,
   useEffect,
+  useCallback,
   ReactNode,
 } from 'react';
 
@@ -51,6 +52,15 @@ export const Popover = ({
   position = 'bottom',
 }: PopoverProps) => {
   const [isOpen, setIsOpen] = useState(open);
+  // Re-sync isOpen when the `open` prop itself changes, without an effect
+  // (react.dev: "Adjusting state when a prop changes"). isOpen still
+  // diverges from `open` in between via close()/PopoverTrigger clicks.
+  const [prevOpenProp, setPrevOpenProp] = useState(open);
+  if (open !== prevOpenProp) {
+    setPrevOpenProp(open);
+    setIsOpen(open);
+  }
+
   const [isPositioned, setIsPositioned] = useState(false); // local state to track if the popover has been positioned
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -59,17 +69,12 @@ export const Popover = ({
     yAlign: position === 'top' ? 'top' : 'bottom',
   });
 
-  // Controlled vs uncontrolled handling
-  useEffect(() => {
-    setIsOpen(open);
-  }, [open]);
-
   // Handle external close function
-  const close = () => {
+  const close = useCallback(() => {
     setIsOpen(false);
     setIsPositioned(false); // Reset positioning state when closing
     onClose?.();
-  };
+  }, [onClose]);
 
   // Handle outside clicks
   useEffect(() => {
@@ -88,7 +93,7 @@ export const Popover = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, closeOnOutsideClick, onClose]);
+  }, [closeOnOutsideClick, close]);
 
   // Handle ESC key
   useEffect(() => {
@@ -104,7 +109,7 @@ export const Popover = ({
     return () => {
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [isOpen, closeOnEsc, onClose]);
+  }, [isOpen, closeOnEsc, close]);
 
   return (
     <PopoverContext.Provider
@@ -207,7 +212,7 @@ export const PopoverContent = ({
   const [dynamicStyles, setDynamicStyles] = useState({
     transform: 'translate(0px, 0px)',
   });
-  const [arrowStyles, setArrowStyles] = useState<any>({});
+  const [arrowStyles, setArrowStyles] = useState<React.CSSProperties>({});
 
   // Convert the preferred position to initial placements
   const getInitialPlacement = (pos: PopoverPosition): Position => {
@@ -225,8 +230,52 @@ export const PopoverContent = ({
     }
   };
 
+  const getArrowPosition = (
+    xAlign: string,
+    yAlign: string,
+    arrowSize: number
+  ): React.CSSProperties => {
+    const arrowOffset = arrowSize / 2;
+    const position: React.CSSProperties = {};
+
+    // Based on popover placement, determine arrow position and border styles
+    if (yAlign === 'top') {
+      position.bottom = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-r border-b border-border`);
+    } else if (yAlign === 'bottom') {
+      position.top = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-t border-l border-border`);
+    }
+
+    if ((yAlign === 'top' || yAlign === 'bottom') && xAlign === 'center') {
+      position.left = '50%';
+      position.marginLeft = `-${arrowOffset}px`;
+    } else if ((yAlign === 'top' || yAlign === 'bottom') && xAlign === 'left') {
+      position.left = '20px';
+    } else if (
+      (yAlign === 'top' || yAlign === 'bottom') &&
+      xAlign === 'right'
+    ) {
+      position.right = '20px';
+    }
+
+    if (xAlign === 'left' && yAlign === 'center') {
+      position.right = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-r border-b border-border`);
+      position.top = '50%';
+      position.marginTop = `-${arrowOffset}px`;
+    } else if (xAlign === 'right' && yAlign === 'center') {
+      position.left = `-${arrowOffset}px`;
+      setArrowDefaultClassName(`border-l border-b border-border`);
+      position.top = '50%';
+      position.marginTop = `-${arrowOffset}px`;
+    }
+
+    return position;
+  };
+
   // This function handles positioning the content relative to the trigger
-  const updatePosition = () => {
+  const updatePosition = useCallback(() => {
     if (!isOpen || !contentRef.current || !triggerRef.current) return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -358,51 +407,7 @@ export const PopoverContent = ({
     setArrowStyles(arrowPosition);
     // Now that we've calculated positions, make the popover visible
     setIsPositioned(true);
-  };
-
-  const getArrowPosition = (
-    xAlign: string,
-    yAlign: string,
-    arrowSize: number
-  ) => {
-    const arrowOffset = arrowSize / 2;
-    const position: any = {};
-
-    // Based on popover placement, determine arrow position and border styles
-    if (yAlign === 'top') {
-      position.bottom = `-${arrowOffset}px`;
-      setArrowDefaultClassName(`border-r border-b border-border`);
-    } else if (yAlign === 'bottom') {
-      position.top = `-${arrowOffset}px`;
-      setArrowDefaultClassName(`border-t border-l border-border`);
-    }
-
-    if ((yAlign === 'top' || yAlign === 'bottom') && xAlign === 'center') {
-      position.left = '50%';
-      position.marginLeft = `-${arrowOffset}px`;
-    } else if ((yAlign === 'top' || yAlign === 'bottom') && xAlign === 'left') {
-      position.left = '20px';
-    } else if (
-      (yAlign === 'top' || yAlign === 'bottom') &&
-      xAlign === 'right'
-    ) {
-      position.right = '20px';
-    }
-
-    if (xAlign === 'left' && yAlign === 'center') {
-      position.right = `-${arrowOffset}px`;
-      setArrowDefaultClassName(`border-r border-b border-border`);
-      position.top = '50%';
-      position.marginTop = `-${arrowOffset}px`;
-    } else if (xAlign === 'right' && yAlign === 'center') {
-      position.left = `-${arrowOffset}px`;
-      setArrowDefaultClassName(`border-l border-b border-border`);
-      position.top = '50%';
-      position.marginTop = `-${arrowOffset}px`;
-    }
-
-    return position;
-  };
+  }, [isOpen, triggerRef, position, sideOffset, arrowSize, setIsPositioned]);
 
   // Initialize position calculation in a layout effect to prevent flicker
   useEffect(() => {
@@ -410,7 +415,7 @@ export const PopoverContent = ({
       updatePosition();
     }
     return undefined;
-  }, [isOpen]);
+  }, [isOpen, triggerRef, updatePosition]);
 
   // Update position on scroll and resize
   useEffect(() => {
@@ -428,7 +433,7 @@ export const PopoverContent = ({
       window.removeEventListener('resize', handlePositionChange);
       window.removeEventListener('scroll', handlePositionChange, true);
     };
-  }, [isOpen, sideOffset, position, isPositioned]);
+  }, [isPositioned, updatePosition]);
 
   // Update position when content changes
   useEffect(() => {
@@ -439,7 +444,7 @@ export const PopoverContent = ({
       observer.observe(contentRef.current, { childList: true, subtree: true });
     }
     return () => observer.disconnect();
-  }, [isOpen, isPositioned]);
+  }, [isPositioned, updatePosition]);
 
   if (!isOpen) {
     return null;
