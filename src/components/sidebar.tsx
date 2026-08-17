@@ -68,13 +68,31 @@ export function SidebarProvider({
 
   const isMobile = mobileView ? useMobile : false;
 
-  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  // `isMobile` starts false during SSR/hydration (both agree, no mismatch)
+  // and resolves to its real value in a normal post-mount re-render. Since
+  // `manualOpen` starts null, `isOpen` is *derived* from the current
+  // `isMobile` until the user actually toggles it — so unlike seeding
+  // `useState(defaultOpen)` once, it stays correct (closed) once mobile is
+  // detected, without an effect forcing state.
+  const [manualOpen, setManualOpen] = React.useState<boolean | null>(null);
+  const isOpen = manualOpen ?? (isMobile ? false : defaultOpen);
+
+  const setIsOpen = React.useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      setManualOpen((prev) => {
+        const current = prev ?? (isMobile ? false : defaultOpen);
+        return typeof value === 'function' ? value(current) : value;
+      });
+    },
+    [isMobile, defaultOpen]
+  );
+
   const [side] = React.useState<'left' | 'right'>(defaultSide);
   const [maxWidth] = React.useState(defaultMaxWidth);
 
   const toggleSidebar = React.useCallback(() => {
     setIsOpen((prev) => !prev);
-  }, []);
+  }, [setIsOpen]);
 
   // Add keyboard shortcut (Ctrl+B) to toggle sidebar
   React.useEffect(() => {
@@ -168,7 +186,9 @@ export function Sidebar({
           )}
           style={{ maxWidth: `${maxWidth}px` }}
           {...props}
-        />
+        >
+          {children}
+        </aside>
       </>
     );
   }

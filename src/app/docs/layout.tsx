@@ -26,7 +26,6 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import { ModeToggle } from '@/components/mode-toggle';
 import { Button } from '@/components/button';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function DocsLayout({
   children,
@@ -34,12 +33,10 @@ export default function DocsLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const isMobile = useIsMobile();
   return (
     <SidebarLayout>
       {/* Left Sidebar Provider */}
       <SidebarProvider
-        defaultOpen={isMobile ? false : true}
         defaultSide="left"
         defaultMaxWidth={280}
         showIconsOnCollapse={true}
