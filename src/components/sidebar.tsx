@@ -331,10 +331,7 @@ export function SidebarMenuItem({
   const isExpanded = alwaysOpen || manuallyExpanded;
   const pathname = usePathname();
 
-  // Effective state "expanded": if alwaysOpen — is always true,
-  // otherwise we take the internal state. No effect is required for synchronization.
-  const expanded = alwaysOpen || isExpanded;
-
+  // Determine if this item is active based on the current path
   const isActive =
     propIsActive !== undefined
       ? propIsActive
@@ -347,11 +344,11 @@ export function SidebarMenuItem({
       e.preventDefault();
       setManuallyExpanded((prev) => !prev);
     }
+    // Close the sidebar if in mobile view when a link is clicked
     if (isMobile && href) {
-      setIsOpen(false);
+      setIsOpen(false); // Close the sidebar
     }
   };
-
   const content = (
     <>
       <div className="flex items-center">
@@ -373,7 +370,7 @@ export function SidebarMenuItem({
       {isOpen && children && !alwaysOpen && isCollapsable && (
         <span className="ml-auto">
           <ChevronRight
-            className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`}
+            className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
           />
         </span>
       )}
