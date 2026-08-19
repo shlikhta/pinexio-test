@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
 import { getAllDocs, getDocBySlug } from '@/lib/docs';
+import { extractHeadings } from '@/lib/toc';
 import { Mdx } from '@/components/mdx-components';
 import Breadcrumb from '@/components/bread-crumb';
 import Toc from '@/components/toc';
@@ -53,8 +54,14 @@ const DocsPage = async ({ params }: { params: tParams }) => {
     },
   });
 
+  const tocItems = extractHeadings(doc.raw);
+
   return (
-    <div className={`grid xl:grid xl:grid-cols-[1fr_270px]`}>
+    <div
+      className={
+        tocItems.length > 0 ? 'grid xl:grid xl:grid-cols-[1fr_270px]' : ''
+      }
+    >
       <article className="overflow-auto">
         <div className="mb-8 text-center">
           <Breadcrumb path={doc.url} />
@@ -62,7 +69,7 @@ const DocsPage = async ({ params }: { params: tParams }) => {
         <Mdx source={source} />
       </article>
 
-      <Toc doc={doc} />
+      <Toc items={tocItems} />
     </div>
   );
 };
