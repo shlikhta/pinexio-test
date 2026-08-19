@@ -188,49 +188,49 @@ export const TocData: TocData = {
       href: '/docs/components/label#props',
     },
   ],
-  theme: [
+  'general/theme': [
     {
       title: 'Overview',
-      href: 'docs/theme#overview',
+      href: '/docs/general/theme#overview',
     },
     {
       title: 'Understanding Foreground and Background',
-      href: '/docs/theme#understanding-foreground-and-background',
+      href: '/docs/general/theme#understanding-foreground-and-background',
     },
     {
       title: 'Primary and Secondary colors',
-      href: '/docs/theme#primary-and-secondary-colors',
+      href: '/docs/general/theme#primary-and-secondary-colors',
     },
 
     {
       title: 'Where to modify',
-      href: '/docs/theme#where-to-modify-themes',
+      href: '/docs/general/theme#where-to-modify-themes',
     },
   ],
-  'search-bar': [
+  'general/search-bar': [
     {
       title: 'How it works',
-      href: '/docs/search-bar#-how-it-works',
+      href: '/docs/general/search-bar#-how-it-works',
     },
     {
       title: 'Key Features',
-      href: '/docs/search-bar#-key-features',
+      href: '/docs/general/search-bar#-key-features',
     },
     {
       title: 'Customization',
-      href: '/docs/search-bar#-customization',
+      href: '/docs/general/search-bar#-customization',
     },
     {
       title: 'Code Snippet: search highlight',
-      href: '/docs/search-bar#-code-snippet-search-highlighting',
+      href: '/docs/general/search-bar#-code-snippet-search-highlighting',
     },
     {
       title: 'Visual Preview',
-      href: '/docs/search-bar#-visual-preview',
+      href: '/docs/general/search-bar#-visual-preview',
     },
     {
       title: 'Why this is cool',
-      href: '/docs/search-bar#-why-this-is-cool',
+      href: '/docs/general/search-bar#-why-this-is-cool',
     },
   ],
   'customization/font': [
