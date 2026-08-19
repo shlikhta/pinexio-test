@@ -235,7 +235,8 @@ export const Menu: React.FC<MenuProps> = ({
   );
 };
 
-interface MenuTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface MenuTriggerProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isOpen?: boolean;
 }
 export const MenuTrigger = React.forwardRef<
