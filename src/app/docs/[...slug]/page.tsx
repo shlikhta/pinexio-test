@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
 import { getAllDocs, getDocBySlug } from '@/lib/docs';
+import { getSidebarNav } from '@/lib/sidebar';
 import { extractHeadings } from '@/lib/toc';
 import { Mdx } from '@/components/mdx-components';
 import Breadcrumb from '@/components/bread-crumb';
@@ -56,6 +57,10 @@ const DocsPage = async ({ params }: { params: tParams }) => {
 
   const tocItems = extractHeadings(doc.raw);
 
+  const section = getSidebarNav().find((s) =>
+    s.pages.some((p) => p.href === doc.url)
+  );
+
   return (
     <div
       className={
@@ -64,12 +69,15 @@ const DocsPage = async ({ params }: { params: tParams }) => {
     >
       <article className="overflow-auto">
         <div className="mb-8 text-center">
-          <Breadcrumb path={doc.url} />
+          <Breadcrumb
+            sectionTitle={section?.title ?? ''}
+            pageTitle={doc.title}
+          />
         </div>
         <Mdx source={source} />
       </article>
 
-      <Toc items={tocItems} />
+      <Toc key={doc.url} items={tocItems} />
     </div>
   );
 };

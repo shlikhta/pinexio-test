@@ -9,92 +9,18 @@ interface TocProps {
   items: TocItem[];
 }
 
-function flattenIds(items: TocItem[]): string[] {
-  return items.flatMap((item) => [
-    item.id,
-    ...(item.pages?.map((page) => page.id) ?? []),
-  ]);
-}
-
-function getScrollParent(el: HTMLElement): Element {
-  let parent = el.parentElement;
-  while (parent) {
-    // Multiple ancestors can carry an `overflow-auto` class without all
-    // of them actually overflowing — only count one that genuinely does.
-    if (
-      /(auto|scroll)/.test(getComputedStyle(parent).overflowY) &&
-      parent.scrollHeight > parent.clientHeight
-    ) {
-      return parent;
-    }
-    parent = parent.parentElement;
-  }
-  return document.scrollingElement ?? document.documentElement;
-}
-
 const Toc: React.FC<TocProps> = ({ items }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Reading window.location.hash during the render itself would mismatch
+  // the server-rendered HTML (which has no window) and React does not
+  // patch that mismatch up — so the hash is read post-hydration instead,
+  // correcting a deep link (e.g. /docs/x#heading) to its matching item
+  // right after the initial paint.
   useEffect(() => {
-    const ids = flattenIds(items);
-    const elements = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-
-    if (elements.length === 0) return;
-
-    // "Active" = the last heading (in document order) whose top has
-    // scrolled above this line. Recomputed directly from live geometry
-    // rather than from IntersectionObserver's isIntersecting flag, since
-    // a short heading can otherwise skip past a narrow intersection band
-    // entirely on a single scroll jump. Falls back to the first heading
-    // so something is always highlighted, even before any scrolling.
-    const HEADER_OFFSET = 100;
-    const scrollParent = getScrollParent(elements[elements.length - 1]);
-
-    const updateActive = () => {
-      let current = elements[0].id;
-      for (const el of elements) {
-        if (el.getBoundingClientRect().top <= HEADER_OFFSET) {
-          current = el.id;
-        } else {
-          break;
-        }
-      }
-
-      // A short trailing section may never scroll past HEADER_OFFSET
-      // before the page runs out of room — once scrolled to the bottom,
-      // force the last heading active instead of getting stuck on an
-      // earlier one.
-      const atBottom =
-        scrollParent.scrollTop + scrollParent.clientHeight >=
-        scrollParent.scrollHeight - 2;
-      if (atBottom) current = elements[elements.length - 1].id;
-
-      setActiveId(current);
-    };
-
-    updateActive();
-
-    // IntersectionObserver is just the efficient trigger for "something
-    // near the top of the viewport changed" — it fires whenever a
-    // heading's top crosses HEADER_OFFSET, regardless of which ancestor
-    // element is actually scrolling (works through nested overflow
-    // containers, unlike a plain window scroll listener).
-    const observer = new IntersectionObserver(updateActive, {
-      rootMargin: `-${HEADER_OFFSET}px 0px 0px 0px`,
-    });
-    elements.forEach((el) => observer.observe(el));
-
-    // Also listen directly for the "reached bottom" case: the last
-    // heading(s) may never cross HEADER_OFFSET at all (nothing left to
-    // scroll below them), so the observer alone would never re-fire.
-    scrollParent.addEventListener('scroll', updateActive, { passive: true });
-
-    return () => {
-      observer.disconnect();
-      scrollParent.removeEventListener('scroll', updateActive);
-    };
+    const hash = window.location.hash.slice(1);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from a browser-only API (URL hash) that cannot be read during SSR/hydration
+    if (hash) setActiveId(hash);
   }, [items]);
 
   if (items.length === 0) return null;
@@ -116,6 +42,7 @@ const Toc: React.FC<TocProps> = ({ items }) => {
               <li key={item.id} className="group">
                 <Link
                   href={`#${item.id}`}
+                  onClick={() => setActiveId(item.id)}
                   className={`transition-colors flex items-center ${
                     isActive
                       ? 'text-primary font-bold'
@@ -134,6 +61,7 @@ const Toc: React.FC<TocProps> = ({ items }) => {
                         <li key={subItem.id} className="text-sm">
                           <Link
                             href={`#${subItem.id}`}
+                            onClick={() => setActiveId(subItem.id)}
                             className={`transition-colors block py-1 ${
                               isSubActive
                                 ? 'text-primary font-bold'
