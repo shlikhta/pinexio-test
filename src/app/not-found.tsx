@@ -12,7 +12,7 @@ export default function NotFound() {
         moved.
       </p>
       <Link
-        href="/docs/index"
+        href="/docs/home"
         className="flex h-11 items-center justify-center rounded-lg border bg-primary px-4 py-2 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
       >
         На головну
