@@ -7,7 +7,11 @@ export default function DocsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const sections = getSidebarNav();
+  const { rootPages, sections } = getSidebarNav();
 
-  return <DocsShell sections={sections}>{children}</DocsShell>;
+  return (
+    <DocsShell rootPages={rootPages} sections={sections}>
+      {children}
+    </DocsShell>
+  );
 }

@@ -57,7 +57,7 @@ const DocsPage = async ({ params }: { params: tParams }) => {
 
   const tocItems = extractHeadings(doc.raw);
 
-  const section = getSidebarNav().find((s) =>
+  const section = getSidebarNav().sections.find((s) =>
     s.pages.some((p) => p.href === doc.url)
   );
 
@@ -68,12 +68,11 @@ const DocsPage = async ({ params }: { params: tParams }) => {
       }
     >
       <article className="overflow-auto">
-        <div className="mb-8 text-center">
-          <Breadcrumb
-            sectionTitle={section?.title ?? ''}
-            pageTitle={doc.title}
-          />
-        </div>
+        {section && (
+          <div className="mb-8 text-center">
+            <Breadcrumb sectionTitle={section.title} pageTitle={doc.title} />
+          </div>
+        )}
         <Mdx source={source} />
       </article>
 

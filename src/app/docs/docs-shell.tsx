@@ -18,19 +18,40 @@ import {
   SidebarHeaderTitle,
   UserAvatar,
   NestedLink,
+  useSidebar,
 } from '@/components/sidebar';
 import { useRouter } from 'next/navigation';
 
 import Header from '@/components/header';
 import { ModeToggle } from '@/components/mode-toggle';
 import { Button } from '@/components/button';
-import type { SidebarSection } from '@/lib/sidebar';
+import type { SidebarNav, SidebarPage } from '@/lib/sidebar';
+
+// Root-level docs have no icon, so unlike a SidebarMenuItem (which falls
+// back to showing just its icon) they have nothing sensible to show when
+// the sidebar is collapsed to icon-only mode — hide them entirely then.
+// Needs useSidebar() itself since DocsShell renders the SidebarProvider
+// that hook depends on, so it can't be called in DocsShell's own body.
+function RootPageLinks({ pages }: { pages: SidebarPage[] }) {
+  const { isOpen } = useSidebar();
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {pages.map((page) => (
+        <NestedLink key={page.href} href={page.href}>
+          {page.title}
+        </NestedLink>
+      ))}
+    </>
+  );
+}
 
 export default function DocsShell({
+  rootPages,
   sections,
   children,
-}: {
-  sections: SidebarSection[];
+}: SidebarNav & {
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -63,6 +84,7 @@ export default function DocsShell({
             </Link>
           </SidebarHeader>
           <SidebarContent>
+            <RootPageLinks pages={rootPages} />
             {sections.map((section) => (
               <SidebarMenuItem
                 isCollapsable={section.pages.length > 0}

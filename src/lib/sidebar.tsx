@@ -15,6 +15,11 @@ export interface SidebarSection {
   pages: SidebarPage[];
 }
 
+export interface SidebarNav {
+  rootPages: SidebarPage[];
+  sections: SidebarSection[];
+}
+
 interface FolderMeta {
   title?: string;
   icon?: string;
@@ -29,7 +34,7 @@ const DEFAULT_ICON_NAME = 'Component';
 // life of the server process in production.
 const isDev = process.env.NODE_ENV !== 'production';
 
-let cache: SidebarSection[] | null = null;
+let cache: SidebarNav | null = null;
 
 function titleCase(folder: string): string {
   return folder
@@ -82,18 +87,17 @@ function readFolderMeta(folder: string, problems: string[]): FolderMeta | null {
   return meta;
 }
 
-export function getSidebarNav(): SidebarSection[] {
+export function getSidebarNav(): SidebarNav {
   if (cache && !isDev) return cache;
 
   const problems: string[] = [];
   const pagesByFolder = new Map<string, SidebarPage[]>();
+  const rootPages: SidebarPage[] = [];
 
   for (const doc of getAllDocs()) {
     const slashIndex = doc.slug.indexOf('/');
     if (slashIndex === -1) {
-      problems.push(
-        `docs/${doc.slug}.md(x): content files must live inside a category folder (e.g. docs/general/${doc.slug}.mdx), not directly in docs/`
-      );
+      rootPages.push({ title: doc.title, href: doc.url });
       continue;
     }
 
@@ -142,11 +146,16 @@ export function getSidebarNav(): SidebarSection[] {
     return a.title.localeCompare(b.title);
   });
 
-  const result = sections.map((section) => ({
-    title: section.title,
-    icon: section.icon,
-    pages: section.pages,
-  }));
+  rootPages.sort((a, b) => a.title.localeCompare(b.title));
+
+  const result: SidebarNav = {
+    rootPages,
+    sections: sections.map((section) => ({
+      title: section.title,
+      icon: section.icon,
+      pages: section.pages,
+    })),
+  };
   cache = result;
   return result;
 }
