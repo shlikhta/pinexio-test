@@ -1,34 +1,29 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { TocData } from 'config/toc';
 import { AlignLeft } from 'lucide-react';
+import type { TocItem } from '@/lib/toc';
 
 interface TocProps {
-  doc: {
-    title: string;
-    slug: string;
-  };
+  items: TocItem[];
 }
 
-const Toc: React.FC<TocProps> = ({ doc }) => {
-  const pathname = usePathname();
-  const [currentPath, setCurrentPath] = useState('');
+const Toc: React.FC<TocProps> = ({ items }) => {
+  const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Reading window.location.hash during the render itself would mismatch
+  // the server-rendered HTML (which has no window) and React does not
+  // patch that mismatch up — so the hash is read post-hydration instead,
+  // correcting a deep link (e.g. /docs/x#heading) to its matching item
+  // right after the initial paint.
   useEffect(() => {
-    const updatePath = () => {
-      setCurrentPath(`${pathname}${window.location.hash}`);
-    };
+    const hash = window.location.hash.slice(1);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from a browser-only API (URL hash) that cannot be read during SSR/hydration
+    if (hash) setActiveId(hash);
+  }, [items]);
 
-    updatePath(); // Set initial value
-    window.addEventListener('hashchange', updatePath);
-
-    return () => {
-      window.removeEventListener('hashchange', updatePath);
-    };
-  }, [pathname]); // Reacts to URL changes
+  if (items.length === 0) return null;
 
   return (
     <aside className="fixed right-0 hidden xl:block w-64 p-6 top-16 border-l border-[var(--color-border)] h-[calc(100vh-4rem)] overflow-y-auto">
@@ -40,13 +35,14 @@ const Toc: React.FC<TocProps> = ({ doc }) => {
       </div>
       <nav className="mt-4">
         <ul className="space-y-3">
-          {TocData[doc.slug as keyof typeof TocData]?.map((item, index) => {
-            const isActive = currentPath === item.href;
+          {items.map((item) => {
+            const isActive = activeId === item.id;
 
             return (
-              <li key={index} className="group">
+              <li key={item.id} className="group">
                 <Link
-                  href={item.href}
+                  href={`#${item.id}`}
+                  onClick={() => setActiveId(item.id)}
                   className={`transition-colors flex items-center ${
                     isActive
                       ? 'text-primary font-bold'
@@ -56,15 +52,16 @@ const Toc: React.FC<TocProps> = ({ doc }) => {
                   {item.title}
                 </Link>
 
-                {'pages' in item && (item.pages ?? []).length > 0 && (
+                {item.pages && item.pages.length > 0 && (
                   <ul className="mt-2 ml-4 space-y-2 border-l-2 border-gray-300 pl-3">
-                    {item.pages?.map((subItem, subIndex) => {
-                      const isSubActive = currentPath === subItem.href;
+                    {item.pages.map((subItem) => {
+                      const isSubActive = activeId === subItem.id;
 
                       return (
-                        <li key={subIndex} className="text-sm">
+                        <li key={subItem.id} className="text-sm">
                           <Link
-                            href={subItem.href}
+                            href={`#${subItem.id}`}
+                            onClick={() => setActiveId(subItem.id)}
                             className={`transition-colors block py-1 ${
                               isSubActive
                                 ? 'text-primary font-bold'

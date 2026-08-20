@@ -154,18 +154,6 @@ export const Menu: React.FC<MenuProps> = ({
     }
   }, [isOpen, calculatePosition]);
 
-  // Initial measurement of popup when it first opens
-  useEffect(() => {
-    if (isOpen && popupRef.current) {
-      // Initial positioning with a slight delay to ensure the DOM is ready
-      setIsPositioning(true);
-      positioningTimerRef.current = window.setTimeout(() => {
-        calculatePosition();
-        setIsPositioning(false);
-      }, 10);
-    }
-  }, [isOpen]);
-
   // Handle resize and scroll events
   useEffect(() => {
     const handleViewportChange = () => {
@@ -247,7 +235,8 @@ export const Menu: React.FC<MenuProps> = ({
   );
 };
 
-interface MenuTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface MenuTriggerProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isOpen?: boolean;
 }
 export const MenuTrigger = React.forwardRef<

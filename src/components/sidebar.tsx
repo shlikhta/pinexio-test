@@ -21,7 +21,7 @@ const SidebarContext = React.createContext<SidebarContextType | undefined>(
   undefined
 );
 
-function useSidebar() {
+export function useSidebar() {
   const context = React.useContext(SidebarContext);
   if (!context) {
     throw new Error('useSidebar must be used within a SidebarProvider');
@@ -68,13 +68,31 @@ export function SidebarProvider({
 
   const isMobile = mobileView ? useMobile : false;
 
-  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  // `isMobile` starts false during SSR/hydration (both agree, no mismatch)
+  // and resolves to its real value in a normal post-mount re-render. Since
+  // `manualOpen` starts null, `isOpen` is *derived* from the current
+  // `isMobile` until the user actually toggles it — so unlike seeding
+  // `useState(defaultOpen)` once, it stays correct (closed) once mobile is
+  // detected, without an effect forcing state.
+  const [manualOpen, setManualOpen] = React.useState<boolean | null>(null);
+  const isOpen = manualOpen ?? (isMobile ? false : defaultOpen);
+
+  const setIsOpen = React.useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      setManualOpen((prev) => {
+        const current = prev ?? (isMobile ? false : defaultOpen);
+        return typeof value === 'function' ? value(current) : value;
+      });
+    },
+    [isMobile, defaultOpen]
+  );
+
   const [side] = React.useState<'left' | 'right'>(defaultSide);
   const [maxWidth] = React.useState(defaultMaxWidth);
 
   const toggleSidebar = React.useCallback(() => {
     setIsOpen((prev) => !prev);
-  }, []);
+  }, [setIsOpen]);
 
   // Add keyboard shortcut (Ctrl+B) to toggle sidebar
   React.useEffect(() => {
@@ -168,7 +186,9 @@ export function Sidebar({
           )}
           style={{ maxWidth: `${maxWidth}px` }}
           {...props}
-        />
+        >
+          {children}
+        </aside>
       </>
     );
   }
@@ -311,10 +331,7 @@ export function SidebarMenuItem({
   const isExpanded = alwaysOpen || manuallyExpanded;
   const pathname = usePathname();
 
-  // Effective state "expanded": if alwaysOpen — is always true,
-  // otherwise we take the internal state. No effect is required for synchronization.
-  const expanded = alwaysOpen || isExpanded;
-
+  // Determine if this item is active based on the current path
   const isActive =
     propIsActive !== undefined
       ? propIsActive
@@ -327,11 +344,11 @@ export function SidebarMenuItem({
       e.preventDefault();
       setManuallyExpanded((prev) => !prev);
     }
+    // Close the sidebar if in mobile view when a link is clicked
     if (isMobile && href) {
-      setIsOpen(false);
+      setIsOpen(false); // Close the sidebar
     }
   };
-
   const content = (
     <>
       <div className="flex items-center">
@@ -353,7 +370,7 @@ export function SidebarMenuItem({
       {isOpen && children && !alwaysOpen && isCollapsable && (
         <span className="ml-auto">
           <ChevronRight
-            className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`}
+            className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
           />
         </span>
       )}

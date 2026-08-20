@@ -4,6 +4,8 @@ import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
 import { getAllDocs, getDocBySlug } from '@/lib/docs';
+import { getSidebarNav } from '@/lib/sidebar';
+import { extractHeadings } from '@/lib/toc';
 import { Mdx } from '@/components/mdx-components';
 import Breadcrumb from '@/components/bread-crumb';
 import Toc from '@/components/toc';
@@ -24,7 +26,7 @@ export const generateMetadata = async ({ params }: { params: tParams }) => {
   const path = awaitedParams.slug.join('/');
   const doc = getDocBySlug(path);
 
-  if (!doc) throw new Error(`Doc not found for slug: ${path}`);
+  if (!doc) notFound();
   return {
     title: doc.title,
     description: doc.description || 'A detailed guide to the topic.',
@@ -53,16 +55,28 @@ const DocsPage = async ({ params }: { params: tParams }) => {
     },
   });
 
+  const tocItems = extractHeadings(doc.raw);
+
+  const section = getSidebarNav().sections.find((s) =>
+    s.pages.some((p) => p.href === doc.url)
+  );
+
   return (
-    <div className={`grid xl:grid xl:grid-cols-[1fr_270px]`}>
+    <div
+      className={
+        tocItems.length > 0 ? 'grid xl:grid xl:grid-cols-[1fr_270px]' : ''
+      }
+    >
       <article className="overflow-auto">
-        <div className="mb-8 text-center">
-          <Breadcrumb path={doc.url} />
-        </div>
+        {section && (
+          <div className="mb-8 text-center">
+            <Breadcrumb sectionTitle={section.title} pageTitle={doc.title} />
+          </div>
+        )}
         <Mdx source={source} />
       </article>
 
-      <Toc doc={doc} />
+      <Toc key={doc.url} items={tocItems} />
     </div>
   );
 };
