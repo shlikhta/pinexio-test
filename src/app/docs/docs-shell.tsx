@@ -39,9 +39,7 @@ function RootPageLinks({ pages }: { pages: SidebarPage[] }) {
   return (
     <>
       {pages.map((page) => (
-        <NestedLink key={page.href} href={page.href}>
-          {page.title}
-        </NestedLink>
+        <SidebarMenuItem key={page.href} href={page.href} label={page.title} />
       ))}
     </>
   );
